@@ -38,3 +38,4 @@ You also can define your Java-, YUI compressor- and Google Closure path:
 #ATTENTION:
 * Java must be installed
 * Always use **relative paths** in your javascript and css files because the location will be replaced (eg. *background:url(../icon.png)*).
+* Ensure, that your **protected/runtime directory is writable** (as it always should be)
