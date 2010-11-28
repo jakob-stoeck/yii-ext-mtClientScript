@@ -5,12 +5,11 @@ Using **Google's closure compiler** for js and **Yahoo's YUI compressor** for cs
 It's mandatory to have java available
 
 #Usage
-Put *mtClientScript* into your extensions folder. Ensure, that your **protected/runtime directory is writable** (as it always should be)
-
-To enable *mtClientScript* make these additions to your configuration file:
+Put *mtClientScript* into your extensions folder. To enable it, make these addition to your configuration file:
 
 <pre>
 'components' => array(
+    ...
     'clientScript' =>array(
         'class' => 'ext.mtClientScript.mtClientScript',
     ),
@@ -24,6 +23,7 @@ You also can define your Java-, YUI compressor- and Google Closure path:
 
 <pre>
 'components' => array(
+    ...
     'clientScript' =>array(
         'class' => 'ext.mtClientScript.mtClientScript',
         'javaPath' => 'path/to/your/java',
