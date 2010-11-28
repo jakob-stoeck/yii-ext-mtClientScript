@@ -46,7 +46,7 @@ class mtClientScript extends CClientScript
      */
     public $closurePath = null;
 
-    private $_defaultCssMedia='screen, projection';
+    private $_defaultCssMedia = 'screen, projection';
     private $_baseUrl = '';
     private $_basePath = '';
     private $_assetsPath = '';
@@ -216,9 +216,7 @@ class mtClientScript extends CClientScript
                         $temp);
                     break;
             }
-            echo $cmd;
             $return = shell_exec($cmd);
-            // unlink($temp);
         }
 
         foreach ($urls as $url) {
