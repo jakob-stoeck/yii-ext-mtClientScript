@@ -5,7 +5,7 @@ Using **Google's closure compiler** for js and **Yahoo's YUI compressor** for cs
 It's mandatory to have java available
 
 #Usage
-Put *mtClientScript* into your extensions folder. To enable it, make these addition to your configuration file:
+Put *mtClientScript* into your extensions folder. To enable it, make this addition to your configuration file:
 
 <pre>
 'components' => array(
