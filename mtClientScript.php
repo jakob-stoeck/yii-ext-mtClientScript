@@ -26,6 +26,10 @@ define('DS', DIRECTORY_SEPARATOR);
 
 class mtClientScript extends CClientScript
 {
+    const CLOSURE_WHITESPACE = 'WHITESPACE_ONLY';
+    const CLOSURE_SIMPLE = 'SIMPLE_OPTIMIZATIONS';
+    const CLOSURE_ADV = 'ADVANCED_OPTIMIZATIONS';
+
     /**
      * @var array files to exclude from beeing combined and compressed
      */
@@ -58,10 +62,10 @@ class mtClientScript extends CClientScript
             throw new Exception('Java not found or not accessable');
         }
         if (!is_readable($this->yuicPath)) {
-            $this->yuicPath = __DIR__ . DS . 'yuicompressor-2.4.2.jar';
+            $this->yuicPath = dirname(__FILE__) . DS . 'yuicompressor-2.4.2.jar';
         }
         if (!is_readable($this->closurePath)) {
-            $this->closurePath = __DIR__ . DS . 'compiler.jar';
+            $this->closurePath = dirname(__FILE__) . DS . 'compiler.jar';
         }
         if (!file_exists($this->yuicPath)) {
             throw new Exception('YUI compressor not found');
@@ -89,37 +93,13 @@ class mtClientScript extends CClientScript
     }
 
     /**
-     * Move ALL scripts down to
      * @param string the output to be inserted with scripts.
      */
     public function renderHead(&$output)
     {
-        // Shift the js files to the page bottom
         $positions = array(
             self::POS_BEGIN, self::POS_READY, self::POS_LOAD, self::POS_HEAD
         );
-        if (!isset($this->scriptFiles[self::POS_END])) {
-                $this->scriptFiles[self::POS_END] = array();
-        }
-        if (!isset($this->scripts[self::POS_END])) {
-            $this->scripts[self::POS_END] = array();
-        }
-        foreach ($positions as $pos) {
-            if (isset($this->scriptFiles[$pos])) {
-                $this->scriptFiles[self::POS_END] = array_merge(
-                    $this->scriptFiles[self::POS_END],
-                    $this->scriptFiles[$pos]
-                );
-                unset($this->scriptFiles[$pos]);
-            }
-            if (isset($this->scripts[$pos])) {
-                $this->scripts[self::POS_END] = array_merge(
-                    $this->scripts[self::POS_END],
-                    $this->scripts[$pos]
-                );
-                unset($this->scripts[$pos]);
-            }
-        }
 
         // combine css files
         if (count($this->cssFiles) > 0) {
@@ -140,8 +120,12 @@ class mtClientScript extends CClientScript
             }
         }
 
-        if ($this->enableJavaScript && $this->scriptFiles[self::POS_END]) {
-            $this->combineFiles('js', $this->scriptFiles[self::POS_END]);
+        if ($this->enableJavaScript) {
+            foreach($positions as $p) {
+                if (isset($this->scriptFiles[$p])) {
+                    $this->combineFiles('js', $this->scriptFiles[$p]);
+                }
+            }
         }
         parent::renderHead($output);
     }
@@ -164,15 +148,16 @@ class mtClientScript extends CClientScript
 
         // Create file paths
         $files = array();
+        $filesRelativeDepth = array();
 
         foreach ($urls as $url) {
             $filePath =
                 $this->_basePath . str_replace($this->_baseUrl, '', $url);
             if (file_exists($filePath)) {
                 $files[] = $filePath;
+                $urlOfFile[$filePath] = explode('/', $url); // relative to WWWROOT without filename
             }
         }
-
         // Generate hash over modification dates
         $_hash = null;
         foreach ($files as $file) {
@@ -185,17 +170,23 @@ class mtClientScript extends CClientScript
         // Create new if not exists ( --disable-optimizations)
         if (!file_exists($this->_assetsPath . DS . $outFile)) {
             $joinedContent = '';
-            foreach ($files as $file) {
-                $joinedContent .= file_get_contents($file);
-            }
 
-            // Correct file path in css/js files :: MUST BE RELATIVE
-            $joinedContent = str_replace('../', '../../', $joinedContent);
-            $joinedContent = preg_replace(
-                '@(\'\")^/@',
-                '\\1' . $this->_baseUrl,
-                $joinedContent
-            );
+            foreach ($files as $file) {
+              // Correct file path in css/js files :: MUST BE RELATIVE
+              if(isset($urlOfFile[$file][1]) && $urlOfFile[$file][1] === 'themes') {
+                $theme = $urlOfFile[$file][1] . '/' . $urlOfFile[$file][2] . '/';
+              } else {
+                $theme = '';
+              }
+              $content = file_get_contents($file);
+              $content = str_replace('../', '../../' . $theme, $content);
+              $content = preg_replace(
+                  '@(\'\")^/@',
+                  '\\1' . $this->_baseUrl,
+                  $content
+              );
+              $joinedContent .= $content;
+            }
             $temp = $this->_basePath . DS . 'protected'
                 . DS . 'runtime' . DS . $outFile;
             file_put_contents($temp, $joinedContent);
@@ -209,10 +200,11 @@ class mtClientScript extends CClientScript
                         $temp);
                     break;
                 case 'js':
-                    $cmd = sprintf('%s -jar %s --js_output_file %s --js %s',
+                    $cmd = sprintf('%s -jar %s --js_output_file %s --compilation_level %s --js %s',
                         $this->javaPath,
                         $this->closurePath,
                         $this->_assetsPath . DS . $outFile,
+                        self::CLOSURE_SIMPLE,
                         $temp);
                     break;
             }
