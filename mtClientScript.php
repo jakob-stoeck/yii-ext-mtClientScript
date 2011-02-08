@@ -26,10 +26,6 @@ define('DS', DIRECTORY_SEPARATOR);
 
 class mtClientScript extends CClientScript
 {
-    const CLOSURE_WHITESPACE = 'WHITESPACE_ONLY';
-    const CLOSURE_SIMPLE = 'SIMPLE_OPTIMIZATIONS';
-    const CLOSURE_ADV = 'ADVANCED_OPTIMIZATIONS';
-
     /**
      * @var array files to exclude from beeing combined and compressed
      */
@@ -49,6 +45,11 @@ class mtClientScript extends CClientScript
      * @var string Absolute file path to google closure compiler
      */
     public $closurePath = null;
+
+		/**
+		 * @var string 'WHITESPACE_ONLY' | 'SIMPLE_OPTIMIZATIONS' | 'ADVANCED_OPTIMIZATIONS'
+		 */
+    public $closureConfig = 'SIMPLE_OPTIMIZATIONS';
 
     private $_defaultCssMedia = 'screen, projection';
     private $_baseUrl = '';
@@ -98,7 +99,7 @@ class mtClientScript extends CClientScript
     public function renderHead(&$output)
     {
         $positions = array(
-            self::POS_BEGIN, self::POS_READY, self::POS_LOAD, self::POS_HEAD
+            self::POS_BEGIN, self::POS_READY, self::POS_LOAD, self::POS_HEAD, self::POS_END
         );
 
         // combine css files
@@ -127,6 +128,8 @@ class mtClientScript extends CClientScript
                 }
             }
         }
+
+        $this->remapScripts();
         parent::renderHead($output);
     }
 
@@ -148,7 +151,6 @@ class mtClientScript extends CClientScript
 
         // Create file paths
         $files = array();
-        $filesRelativeDepth = array();
 
         foreach ($urls as $url) {
             $filePath =
@@ -172,12 +174,12 @@ class mtClientScript extends CClientScript
             $joinedContent = '';
 
             foreach ($files as $file) {
-              // Correct file path in css/js files :: MUST BE RELATIVE
               if(isset($urlOfFile[$file][1]) && $urlOfFile[$file][1] === 'themes') {
                 $theme = $urlOfFile[$file][1] . '/' . $urlOfFile[$file][2] . '/';
               } else {
                 $theme = '';
               }
+              // Correct file path in css/js files :: MUST BE RELATIVE
               $content = file_get_contents($file);
               $content = str_replace('../', '../../' . $theme, $content);
               $content = preg_replace(
@@ -204,7 +206,7 @@ class mtClientScript extends CClientScript
                         $this->javaPath,
                         $this->closurePath,
                         $this->_assetsPath . DS . $outFile,
-                        self::CLOSURE_SIMPLE,
+                        $this->closureConfig,
                         $temp);
                     break;
             }
@@ -215,6 +217,5 @@ class mtClientScript extends CClientScript
             $this->scriptMap[basename($url)]
                 = $this->getCoreScriptUrl() . '/' . $outFile;
         }
-        $this->remapScripts();
     }
 }

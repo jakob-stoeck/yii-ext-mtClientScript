@@ -29,6 +29,7 @@ You also can define your Java-, YUI compressor- and Google Closure path:
         'javaPath' => 'path/to/your/java',
         'yuicPath' => 'path/to/your/yui/compressor.jar',
         'closurePath' => 'path/to/your/closure/compiler.jar',
+        'closureConfig' => 'WHITESPACE_ONLY' | 'SIMPLE_OPTIMIZATIONS' | 'ADVANCED_OPTIMIZATIONS',
     ),
     ...
 ),
