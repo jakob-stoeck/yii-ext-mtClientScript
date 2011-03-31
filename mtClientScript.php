@@ -133,6 +133,68 @@ class mtClientScript extends CClientScript
         parent::renderHead($output);
     }
 
+		/**
+		 * Inserts the scripts at the end of the body section.
+		 * @param string $output the output to be inserted with scripts.
+		 */
+		public function renderBodyEnd(&$output)
+		{
+			if(!isset($this->scriptFiles[self::POS_END]) && !isset($this->scripts[self::POS_END])
+				&& !isset($this->scripts[self::POS_READY]) && !isset($this->scripts[self::POS_LOAD]) && !isset($this->scriptFiles[self::POS_LOAD]))
+				return;
+			$fullPage=0;
+			$output=preg_replace('/(<\\/body\s*>)/is','<###end###>$1',$output,1,$fullPage);
+			$html='';
+			if(isset($this->scriptFiles[self::POS_END]))
+			{
+				foreach($this->scriptFiles[self::POS_END] as $scriptFile)
+					$html.=CHtml::scriptFile($scriptFile)."\n";
+			}
+			if(isset($this->scriptFiles[self::POS_LOAD])) {
+				// defer loading of scripts {@link http://code.google.com/speed/page-speed/docs/payload.html#DeferLoadingJS}
+				if($fullPage) {
+					$html.='<script type="text/javascript" charset="utf-8">
+					// Add a script element as a child of the body
+					function downloadJSAtOnload() {';
+					foreach($this->scriptFiles[self::POS_LOAD] as $scriptFile) {
+						$html.='var element = document.createElement("script");
+						element.src = "'.$scriptFile.'";
+						document.body.appendChild(element);';
+					}
+					$html.='}'."\n";
+				
+					$html.='// Check for browser support of event handling capability
+					if (window.addEventListener)
+					window.addEventListener("load", downloadJSAtOnload, false);
+					else if (window.attachEvent)
+					window.attachEvent("onload", downloadJSAtOnload);
+					else window.onload = downloadJSAtOnload;
+					</script>'."\n";;
+				}
+			}
+			$scripts=isset($this->scripts[self::POS_END]) ? $this->scripts[self::POS_END] : array();
+			if(isset($this->scripts[self::POS_READY]))
+			{
+				if($fullPage)
+					$scripts[]="jQuery(function($) {\n".implode("\n",$this->scripts[self::POS_READY])."\n});";
+				else
+					$scripts[]=implode("\n",$this->scripts[self::POS_READY]);
+			}
+			if(isset($this->scripts[self::POS_LOAD]))
+			{
+				if($fullPage)
+					$scripts[]="jQuery(window).load(function() {\n".implode("\n",$this->scripts[self::POS_LOAD])."\n});";
+				else
+					$scripts[]=implode("\n",$this->scripts[self::POS_LOAD]);
+			}
+			if(!empty($scripts))
+				$html.=CHtml::script(implode("\n",$scripts))."\n";
+
+			if($fullPage)
+				$output=str_replace('<###end###>',$html,$output);
+			else
+				$output=$output.$html;
+		}
 
     /**
      * Combines, optimizes and compresses all given files
