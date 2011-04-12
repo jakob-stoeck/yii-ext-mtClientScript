@@ -51,6 +51,15 @@ class mtClientScript extends CClientScript
 		 */
     public $closureConfig = 'SIMPLE_OPTIMIZATIONS';
 
+		/**
+		 * @var array list of cdn hosts
+		 */
+		public $cdn;
+		/**
+		 * @var array list of file => host
+		 */
+		public $fileToHost;
+
     private $_defaultCssMedia = 'screen, projection';
     private $_baseUrl = '';
     private $_basePath = '';
@@ -196,6 +205,20 @@ class mtClientScript extends CClientScript
 				$output=$output.$html;
 		}
 
+		/**
+		 * Returns one host per file, iterating through the hosts to distribute them evenly
+		 * 
+		 * @param string $file
+		 * @return string
+		 */
+		public function fileToHost($file) {
+			if(!isset($this->fileToHost[$file])) {
+				$this->fileToHost[$file] = current($this->cdn);
+				if(!next($this->cdn)) reset($this->cdn);
+			}
+			return $this->fileToHost[$file];
+		}
+
     /**
      * Combines, optimizes and compresses all given files
      *
@@ -244,11 +267,13 @@ class mtClientScript extends CClientScript
               // Correct file path in css/js files :: MUST BE RELATIVE
               $content = file_get_contents($file);
               $content = str_replace('../', '../../' . $theme, $content);
-              $content = preg_replace(
-                  '@(\'\")^/@',
-                  '\\1' . $this->_baseUrl,
-                  $content
-              );
+              $content = preg_replace(array(
+									'/(\'\")^\//',
+									'/url\([\'"]?(\/[^)\'"]+)[\'"]?\)/e', // adds a host to absolute urls
+								), array(
+									'$1' . '/var/www',
+									'"url(http://" . $this->fileToHost("$1") . "$1)"',
+								), $content);
               $joinedContent .= $content;
             }
             $temp = $this->_basePath . DS . 'protected'
