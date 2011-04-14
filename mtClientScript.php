@@ -252,7 +252,7 @@ class mtClientScript extends CClientScript
         }
 
         // File name of the combined file will be...
-        $outFile = sha1($_hash) . ".$type";
+        $outFile = (!empty($this->cdn)?'cdn':'') . sha1($_hash) . '.' . $type;
 
         // Create new if not exists ( --disable-optimizations)
         if (!file_exists($this->_assetsPath . DS . $outFile)) {
@@ -267,13 +267,16 @@ class mtClientScript extends CClientScript
               // Correct file path in css/js files :: MUST BE RELATIVE
               $content = file_get_contents($file);
               $content = str_replace('../', '../../' . $theme, $content);
-              $content = preg_replace(array(
-									'/(\'\")^\//',
-									'/url\([\'"]?(\/[^)\'"]+)[\'"]?\)/e', // adds a host to absolute urls
-								), array(
-									'$1' . '/var/www',
-									'"url(http://" . $this->fileToHost("$1") . "$1)"',
-								), $content);
+
+							$search = array('/(\'\")^\//');
+							$replace = array('$1' . '/var/www');
+
+							if(!empty($this->cdn)) {
+								$search[] = '/url\([\'"]?(\/[^)\'"]+)[\'"]?\)/e'; // adds a host to absolute urls
+								$replace[] = '"url(http://" . $this->fileToHost("$1") . "$1)"';
+							}
+
+              $content = preg_replace($search, $replace, $content);
               $joinedContent .= $content;
             }
             $temp = $this->_basePath . DS . 'protected'
