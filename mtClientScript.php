@@ -54,7 +54,7 @@ class mtClientScript extends CClientScript
 		/**
 		 * @var array list of cdn hosts
 		 */
-		public $cdn;
+		public $cdn = array();
 		/**
 		 * @var array list of file => host
 		 */
