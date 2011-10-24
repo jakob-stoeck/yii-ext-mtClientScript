@@ -31,6 +31,11 @@ class mtClientScript extends CClientScript
      */
     public $excludeFiles = array();
 
+		/**
+		 * @var bool exclude asset files like core scripts
+		 */
+		public $excludeAssets = false;
+
     /**
      * @var string Absolute file path to java
      */
@@ -86,9 +91,7 @@ class mtClientScript extends CClientScript
 
         $this->_baseUrl = Yii::app()->baseUrl;
         $this->_basePath = YiiBase::getPathOfAlias('webroot');
-        $this->_assetsPath = $this->_basePath . str_replace(
-            $this->_baseUrl, '', $this->getCoreScriptUrl()
-        );
+        $this->_assetsPath = $this->_basePath . str_replace($this->_baseUrl, '', $this->getCoreScriptUrl());
     }
 
     /**
@@ -99,48 +102,66 @@ class mtClientScript extends CClientScript
      */
     public function setDescription()
     {
-        return 'This pluign combines and shrinks all js and css files';
+        return 'This plugin combines and shrinks all js and css files';
     }
+
+		public function getPositions() {
+			return array(self::POS_BEGIN, self::POS_READY, self::POS_LOAD, self::POS_HEAD, self::POS_END);
+		}
+
+		public function isAsset($url) {
+			return strpos($url, $this->getCoreScriptUrl()) === 0;
+		}
 
     /**
      * @param string the output to be inserted with scripts.
      */
-    public function renderHead(&$output)
-    {
-        $positions = array(
-            self::POS_BEGIN, self::POS_READY, self::POS_LOAD, self::POS_HEAD, self::POS_END
-        );
-
+    public function renderHead(&$output) {
         // combine css files
         if (count($this->cssFiles) > 0) {
             $cssFiles = array();
             foreach ($this->cssFiles as $url => $media) {
-                if (in_array($url, $this->excludeFiles)) {
-                    continue;
+                if (
+									!($this->excludeAssets && $this->isAsset($url)) &&
+									!in_array(basename($url), $this->excludeFiles)
+								) {
+	                $cssFiles[$media ? strtolower($media) : $this->_defaultCssMedia][] = $url;
                 }
-                $cssFiles[$media
-                ?
-                strtolower($media)
-                :
-                $this->_defaultCssMedia][] = $url;
             }
 
-            foreach ($cssFiles as $media => $url) {
-                $this->combineFiles('css', $url, $media);
-            }
-        }
-
-        if ($this->enableJavaScript) {
-            foreach($positions as $p) {
-                if (isset($this->scriptFiles[$p])) {
-                    $this->combineFiles('js', $this->scriptFiles[$p]);
+            foreach ($cssFiles as $media => $urls) {
+                $outfile = $this->combineFiles('css', $urls);
+                foreach ($urls as $url) {
+                    $this->scriptMap[basename($url)] = $this->getCoreScriptUrl() . '/' . $outfile;
                 }
             }
         }
 
-        $this->remapScripts();
-        parent::renderHead($output);
-    }
+				// combine js files
+				if ($this->enableJavaScript) {
+					foreach($this->getPositions() as $p) {
+							if (isset($this->scriptFiles[$p])) {
+								$combine = array();
+								foreach ($this->scriptFiles[$p] as $url) {
+									if (
+										!($this->excludeAssets && $this->isAsset($url)) &&
+										!in_array(basename($url), $this->excludeFiles)
+									) {
+										$combine[] = $url;
+									}
+								}
+								if ($combine) {
+									$outfile = $this->combineFiles('js', $combine);
+									foreach ($combine as $url) {
+										$this->scriptMap[basename($url)] = $this->getCoreScriptUrl() . '/' . $outfile;
+									}
+								}
+							}
+						}
+					}
+			$this->remapScripts();
+			parent::renderHead($output);
+		}
 
 		/**
 		 * Inserts the scripts at the end of the body section.
@@ -225,11 +246,10 @@ class mtClientScript extends CClientScript
      * @param string $type js or css
      * @param array $urls  array of url of the files
      * @param string $media optional, only relevant for css
-     * @return void
+     * @return string name of the resulting file
      * @author Florian Fackler
      */
-    private function combineFiles($type, array $urls, $media=null)
-    {
+    private function combineFiles($type, $urls) {
         if (!in_array($type, array('js', 'css'))) {
             throw new Exception('Only js or css as file type allowed');
         }
@@ -245,6 +265,7 @@ class mtClientScript extends CClientScript
                 $urlOfFile[$filePath] = explode('/', $url); // relative to WWWROOT without filename
             }
         }
+
         // Generate hash over modification dates
         $_hash = null;
         foreach ($files as $file) {
@@ -279,8 +300,7 @@ class mtClientScript extends CClientScript
               $content = preg_replace($search, $replace, $content);
               $joinedContent .= $content;
             }
-            $temp = $this->_basePath . DS . 'protected'
-                . DS . 'runtime' . DS . $outFile;
+            $temp = $this->_basePath . DS . 'protected' . DS . 'runtime' . DS . $outFile;
             file_put_contents($temp, $joinedContent);
             unset($joinedContent);
             switch ($type) {
@@ -303,9 +323,6 @@ class mtClientScript extends CClientScript
             $return = shell_exec($cmd);
         }
 
-        foreach ($urls as $url) {
-            $this->scriptMap[basename($url)]
-                = $this->getCoreScriptUrl() . '/' . $outFile;
-        }
+        return $outFile;
     }
 }
