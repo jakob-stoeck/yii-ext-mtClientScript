@@ -59,7 +59,13 @@ class mtClientScript extends CClientScript {
 	public function registerCoreScript($name) {
 		if (isset($this->packages[$name], $this->packages[$name]['globals'])) {
 			foreach ($this->packages[$name]['globals'] as $key => $value) {
+			    if (strpos($value,'js:')!==0) {
 				$this->registerScript($key, 'var ' . $key . ' = "' . str_replace('"', '\"', $value) . '";', CClientScript::POS_HEAD);
+			    }
+			    else { //if the value starts with js: it will not be wrapped in quotes, as we might want to register JS objects, booleans or other data types
+				$value = substr($value, 3);//remove js: from the string
+				$this->registerScript($key, 'var ' . $key . ' = ' . $value . ';', CClientScript::POS_HEAD);
+			    }
 			}
 		}
 		return parent::registerCoreScript($name);
