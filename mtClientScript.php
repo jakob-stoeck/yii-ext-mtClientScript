@@ -4,6 +4,7 @@ define('DS', DIRECTORY_SEPARATOR);
 class mtClientScript extends CClientScript {
 	const TYPE_CSS = 'css';
 	const TYPE_JS = 'js';
+	private $combine = false;
 	/**
 	 * @var array files to exclude from beeing combined and compressed
 	 */
@@ -161,7 +162,9 @@ class mtClientScript extends CClientScript {
 	 * @param string the output to be inserted with scripts.
 	 */
 	public function renderHead(&$output) {
-		$this->combineScripts();
+		if ($this->combine) {
+			$this->combineScripts();
+		}
 		parent::renderHead($output);
 	}
 
