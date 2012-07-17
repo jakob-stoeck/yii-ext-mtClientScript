@@ -4,7 +4,7 @@ define('DS', DIRECTORY_SEPARATOR);
 class mtClientScript extends CClientScript {
 	const TYPE_CSS = 'css';
 	const TYPE_JS = 'js';
-	private $combine = false;
+	public $combine = false;
 	/**
 	 * @var array files to exclude from beeing combined and compressed
 	 */
