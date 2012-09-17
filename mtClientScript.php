@@ -108,20 +108,26 @@ class mtClientScript extends CClientScript {
 
 	/**
 	 * @param array $urls
-	 * @return int timestamp of oldest file or 0 if no file exists
+	 * @return array of timestamps
 	 */
-	public function getMaxTime($urls) {
-		$maxTime = 0;
+	private function filesmtimes($urls) {
+		$return = array();
 		foreach ($urls as $url) {
-			$filePath = $this->_basePath . rtrim($this->_baseUrl, '/') . '/' . $url;
-			if (stream_resolve_include_path($filePath)) {
-				$time = filemtime($filePath);
-				if ($time > $maxTime) {
-					$maxTime = $time;
-				}
-			}
+			$return[] = $this->filemtimeCheck($url);
 		}
-		return $maxTime;
+		return $return;
+	}
+
+	private function filemtimeCheck($url) {
+		$filePath = $this->_basePath . rtrim($this->_baseUrl, '/') . '/' . $url;
+		if (stream_resolve_include_path($filePath)) {
+			return filemtime($filePath);
+		}
+	}
+
+	public function registerCssFileWithTimestamp($name) {
+		$name .= '?t=' . $this->filemtimeCheck($name);
+		return parent::registerCssFile($name);
 	}
 
 	private function combineScripts() {
@@ -140,13 +146,14 @@ class mtClientScript extends CClientScript {
 		// 		}
 		// 	}
 		// }
+		
 		// each package gets its own minified version
 		foreach ($this->packages as $name => $package) {
 			$this->_baseUrl = isset($package['baseUrl']) ? $package['baseUrl'] : $this->getCoreScriptUrl();
 			$files = $package[self::TYPE_JS];
-			$latestChange = $this->getMaxTime($files);
-			if ($latestChange === 0) { continue; }
-			$outFile = $name . '_' . $latestChange;
+			$mtimes = $this->filesmtimes($files);
+			if (empty($mtimes) === 0) { continue; }
+			$outFile = $name . '_' . md5(implode('', $mtimes));
 			$urls = array();
 			foreach ($files as $f) {
 				$base = basename($f);
