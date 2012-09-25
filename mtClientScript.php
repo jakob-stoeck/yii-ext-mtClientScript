@@ -138,7 +138,7 @@ class mtClientScript extends CClientScript {
 		// 			$cssFiles[$media ? strtolower($media) : $this->_defaultCssMedia][] = $url;
 		// 		}
 		// 	}
-		// 
+		//
 		// 	foreach ($cssFiles as $media => $urls) {
 		// 		$outfile = $this->combineFiles('css', $urls);
 		// 		foreach ($urls as $url) {
@@ -146,13 +146,13 @@ class mtClientScript extends CClientScript {
 		// 		}
 		// 	}
 		// }
-		
+
 		// each package gets its own minified version
 		foreach ($this->packages as $name => $package) {
 			$this->_baseUrl = isset($package['baseUrl']) ? $package['baseUrl'] : $this->getCoreScriptUrl();
 			$files = $package[self::TYPE_JS];
 			$mtimes = $this->filesmtimes($files);
-			if (empty($mtimes) === 0) { continue; }
+			if (empty($mtimes)) { continue; }
 			$outFile = $name . '_' . md5(implode('', $mtimes));
 			$urls = array();
 			foreach ($files as $f) {
@@ -166,7 +166,7 @@ class mtClientScript extends CClientScript {
 			// happens if all package files were already mapped
 			if (empty($urls)) { continue; }
 			$this->combineFiles(self::TYPE_JS, $urls, $outFile);
-			
+
 		}
 		$this->remapScripts();
 	}
@@ -352,7 +352,7 @@ class mtClientScript extends CClientScript {
 	private function crockfordify($content, $outFile, $type) {
 		require_once 'jsmin.php';
 		require_once 'cssmin-v3.0.1.php';
-		
+
 		switch ($type) {
 			case self::TYPE_CSS:
 				$out = CSSMin::minify($content);
