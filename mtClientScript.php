@@ -15,20 +15,20 @@ class mtClientScript extends CClientScript {
 	 */
 	public $excludeAssets = false;
 
-  /**
-   * @var string Absolute file path to java
-   */
-  public $javaPath = '/usr/bin/java';
+	/**
+	 * @var string Absolute file path to java
+	 */
+	public $javaPath = '/usr/bin/java';
 
-  /**
-   * @var string Absolute file path to yui compressor
-   */
-  public $yuicPath = null;
+	/**
+	 * @var string Absolute file path to yui compressor
+	 */
+	public $yuicPath = null;
 
-  /**
-   * @var string Absolute file path to google closure compiler
-   */
-  public $closurePath = null;
+	/**
+	 * @var string Absolute file path to google closure compiler
+	 */
+	public $closurePath = null;
 
 	const CLOSURE_WHITESPACE = 'WHITESPACE_ONLY';
 	const CLOSURE_SIMPLE = 'SIMPLE_OPTIMIZATIONS';
@@ -40,7 +40,7 @@ class mtClientScript extends CClientScript {
 	/**
 	 * @var string 'WHITESPACE_ONLY' | 'SIMPLE_OPTIMIZATIONS' | 'ADVANCED_OPTIMIZATIONS'
 	 */
-  public $closureConfig = self::CLOSURE_SIMPLE;
+	public $closureConfig = self::CLOSURE_SIMPLE;
 
 	/**
 	 * @var array list of cdn hosts
@@ -51,47 +51,48 @@ class mtClientScript extends CClientScript {
 	 */
 	public $fileToHost;
 
-  private $_defaultCssMedia = 'screen, projection';
-  private $_baseUrl = '';
-  private $_basePath = '';
-  private $_assetsPath = '';
+	private $_defaultCssMedia = 'screen, projection';
+	private $_baseUrl = '';
+	private $_basePath = '';
+	private $_assetsPath = '';
 
 	public function registerCoreScript($name) {
 		if (isset($this->packages[$name], $this->packages[$name]['globals'])) {
 			foreach ($this->packages[$name]['globals'] as $key => $value) {
-			    if (strpos($value,'js:')!==0) {
-				$this->registerScript($key, 'var ' . $key . ' = "' . str_replace('"', '\"', $value) . '";', CClientScript::POS_HEAD);
-			    }
-			    else { //if the value starts with js: it will not be wrapped in quotes, as we might want to register JS objects, booleans or other data types
-				$value = substr($value, 3);//remove js: from the string
-				$this->registerScript($key, 'var ' . $key . ' = ' . $value . ';', CClientScript::POS_HEAD);
-			    }
+				if (strpos($value,'js:')!==0) {
+					$this->registerScript($key, 'var ' . $key . ' = "' . str_replace('"', '\"', $value) . '";', CClientScript::POS_HEAD);
+				}
+				else {
+					// if the value starts with js: it will not be wrapped in quotes, as we might want to register JS objects, booleans or other data types
+					$value = substr($value, 3);//remove js: from the string
+					$this->registerScript($key, 'var ' . $key . ' = ' . $value . ';', CClientScript::POS_HEAD);
+				}
 			}
 		}
 		return parent::registerCoreScript($name);
 	}
 
 	public function init() {
-    parent::init();
-    if (!is_executable($this->javaPath)) {
-        throw new Exception('Java not found or not accessable');
-    }
-    if (!is_readable($this->yuicPath)) {
-        $this->yuicPath = dirname(__FILE__) . DS . 'yuicompressor-2.4.8pre.jar';
-    }
-    if (!is_readable($this->closurePath)) {
-        $this->closurePath = dirname(__FILE__) . DS . 'compiler.jar';
-    }
-    if (!file_exists($this->yuicPath)) {
-        throw new Exception('YUI compressor not found');
-    }
-    if (!file_exists($this->closurePath)) {
-        throw new Exception('Google closure compiler not found');
-    }
+		parent::init();
+		if (!is_executable($this->javaPath)) {
+			throw new Exception('Java not found or not accessable');
+		}
+		if (!is_readable($this->yuicPath)) {
+			$this->yuicPath = dirname(__FILE__) . DS . 'yuicompressor-2.4.8pre.jar';
+		}
+		if (!is_readable($this->closurePath)) {
+			$this->closurePath = dirname(__FILE__) . DS . 'compiler.jar';
+		}
+		if (!file_exists($this->yuicPath)) {
+			throw new Exception('YUI compressor not found');
+		}
+		if (!file_exists($this->closurePath)) {
+			throw new Exception('Google closure compiler not found');
+		}
 
-    $this->_baseUrl = Yii::app()->baseUrl;
-    $this->_basePath = YiiBase::getPathOfAlias('webroot');
-    $this->_assetsPath = $this->_basePath . str_replace($this->_baseUrl, '', $this->getCoreScriptUrl());
+		$this->_baseUrl = Yii::app()->baseUrl;
+		$this->_basePath = YiiBase::getPathOfAlias('webroot');
+		$this->_assetsPath = $this->_basePath . str_replace($this->_baseUrl, '', $this->getCoreScriptUrl());
 	}
 
 	public function setDescription() {
@@ -131,22 +132,6 @@ class mtClientScript extends CClientScript {
 	}
 
 	private function combineScripts() {
-		// if (count($this->cssFiles) > 0) {
-		// 	$cssFiles = array();
-		// 	foreach ($this->cssFiles as $url => $media) {
-		// 		if (!($this->excludeAssets && $this->isAsset($url)) && !in_array(basename($url), $this->excludeFiles)) {
-		// 			$cssFiles[$media ? strtolower($media) : $this->_defaultCssMedia][] = $url;
-		// 		}
-		// 	}
-		//
-		// 	foreach ($cssFiles as $media => $urls) {
-		// 		$outfile = $this->combineFiles('css', $urls);
-		// 		foreach ($urls as $url) {
-		// 			$this->scriptMap[basename($url)] = $this->getCoreScriptUrl() . '/' . $outfile;
-		// 		}
-		// 	}
-		// }
-
 		// each package gets its own minified version
 		foreach ($this->packages as $name => $package) {
 			$this->_baseUrl = isset($package['baseUrl']) ? $package['baseUrl'] : $this->getCoreScriptUrl();
@@ -182,62 +167,6 @@ class mtClientScript extends CClientScript {
 	}
 
 	/**
-	 * Inserts the scripts at the end of the body section.
-	 * @param string $output the output to be inserted with scripts.
-	 */
-	// public function renderBodyEnd(&$output)
-	// {
-	// 	if(!isset($this->scriptFiles[self::POS_END]) && !isset($this->scripts[self::POS_END])
-	// 	&& !isset($this->scripts[self::POS_READY]) && !isset($this->scripts[self::POS_LOAD]) && !isset($this->scriptFiles[self::POS_LOAD]))
-	// 	return;
-	// 	$fullPage=0;
-	// 	$output=preg_replace('/(<\\/body\s*>)/is','<###end###>$1',$output,1,$fullPage);
-	// 	$html='';
-	// 	if(isset($this->scriptFiles[self::POS_END]))
-	// 	{
-	// 	foreach($this->scriptFiles[self::POS_END] as $scriptFile)
-	// 		$html.=Html::scriptFile($scriptFile)."\n";
-	// 	}
-	// 	if(isset($this->scriptFiles[self::POS_LOAD])) {
-	// 		// defer loading of scripts {@link http://code.google.com/speed/page-speed/docs/payload.html#DeferLoadingJS}
-	// 		if($fullPage) {
-	// 			$html.='<script>// Add a script element as a child of the body
-	// 			$(function() {';
-	// 			foreach($this->scriptFiles[self::POS_LOAD] as $scriptFile) {
-	// 				$html.='var node = document.createElement("script");
-	// 				node.type = "text/javascript";
-	// 				node.async = true;
-	// 				node.src = "'.$scriptFile.'";
-	// 				document.body.appendChild(element);';
-	// 			}
-	// 			$html.='});</script>';
-	// 		}
-	// 	}
-	// 	$scripts=isset($this->scripts[self::POS_END]) ? $this->scripts[self::POS_END] : array();
-	// 	if(isset($this->scripts[self::POS_READY])) {
-	// 		if($fullPage)
-	// 			$scripts[]="jQuery(function($) {\n".implode("\n",$this->scripts[self::POS_READY])."\n});";
-	// 		else
-	// 			$scripts[]=implode("\n",$this->scripts[self::POS_READY]);
-	// 	}
-	// 	if(isset($this->scripts[self::POS_LOAD])) {
-	// 		if($fullPage)
-	// 			$scripts[]="jQuery(window).load(function() {\n".implode("\n",$this->scripts[self::POS_LOAD])."\n});";
-	// 		else
-	// 			$scripts[]=implode("\n",$this->scripts[self::POS_LOAD]);
-	// 	}
-	// 	if(!empty($scripts)) {
-	// 		$html.=CHtml::script(implode("\n",$scripts))."\n";
-	// 	}
-	// 	if($fullPage) {
-	// 		$output=str_replace('<###end###>',$html,$output);
-	// 	}
-	// 	else {
-	// 		$output=$output.$html;
-	// 	}
-	// }
-
-	/**
 	 * Returns one host per file, iterating through the hosts to distribute them evenly
 	 *
 	 * @param string $file
@@ -255,7 +184,7 @@ class mtClientScript extends CClientScript {
 	 * Combines, optimizes and compresses all given files
 	 *
 	 * @param string $type js or css
-	 * @param array $urls  array of url of the files
+	 * @param array $urls	array of url of the files
 	 * @param string $media optional, only relevant for css
 	 * @return string name of the resulting file
 	 * @author Florian Fackler
@@ -269,25 +198,19 @@ class mtClientScript extends CClientScript {
 			return;
 		}
 
-		// $files = array();
-		// $urlOfFile = array();
-		// foreach ($urls as $url) {
-		// 	$urlOfFile[$filePath] = explode('/', $url); // relative to WWWROOT without filename
-		// }
-
 		switch ($type) {
 			case self::TYPE_CSS:
 				return;
 				$joinedContent = '';
 				foreach ($files as $file) {
-				  if(isset($urlOfFile[$file][1]) && $urlOfFile[$file][1] === 'themes') {
+					if(isset($urlOfFile[$file][1]) && $urlOfFile[$file][1] === 'themes') {
 						$theme = $urlOfFile[$file][1] . '/' . $urlOfFile[$file][2] . '/';
-				  } else {
+					} else {
 						$theme = '';
-				  }
-				  // Correct file path in css/js files :: MUST BE RELATIVE
-				  $content = file_get_contents($file);
-				  $content = str_replace('../', '../../' . $theme, $content);
+					}
+					// Correct file path in css/js files :: MUST BE RELATIVE
+					$content = file_get_contents($file);
+					$content = str_replace('../', '../../' . $theme, $content);
 
 					$search = array('/(\'\")^\//');
 					$replace = array('$1' . '/var/www');
@@ -297,8 +220,8 @@ class mtClientScript extends CClientScript {
 						$replace[] = '"url(http://" . $this->fileToHost("$1") . "$1)"';
 					}
 
-				  $content = preg_replace($search, $replace, $content);
-				  $joinedContent .= $content;
+					$content = preg_replace($search, $replace, $content);
+					$joinedContent .= $content;
 				}
 				$this->closurify($joinedContent, $outFile, $type);
 			break;
@@ -310,57 +233,49 @@ class mtClientScript extends CClientScript {
 	}
 
 	private function minifyJs($urls, $outFile) {
-		if (empty($urls)) throw new CException('Minification does not contain URLs for ' . $outFile);
-		$cmd = sprintf('%s -jar %s --module_output_path_prefix %s --compilation_level %s --formatting=%s --module %s:%d %s 2>&1',
-			$this->javaPath,
-			$this->closurePath,
-			$this->_assetsPath . DS,
-			$this->closureConfig,
-			self::FORMAT_DELIMITER,
-			$outFile,
-			count($urls),
-			'--js ' . implode(' --js ', array_map(function($u){ return ltrim($u, '/'); }, $urls))
-		);
+		if (empty($urls))
+			throw new CException('Minification does not contain URLs for ' . $outFile);
+		$cmd = implode(' ', array(
+			$this->javaPath, '-jar' , $this->closurePath,
+			'--module_output_path_prefix', $this->_assetsPath . DS,
+			'--compilation_level', $this->closureConfig,
+			// '--warning_level', 'QUIET', // 'QUIET|DEFAULT|VERBOSE'
+			'--formatting', self::FORMAT_DELIMITER,
+			sprintf('--module %s:%d %s',
+				$outFile,
+				count($urls),
+				'--js ' . implode(' --js ', array_map(function($u) {
+					return ltrim($u, '/');
+				}, $urls))
+			),
+			'2>&1',
+		));
 		$return = shell_exec($cmd);
-		if (!empty($return)) Yii::log($return, CLogger::LEVEL_WARNING, 'ClientScript');
+		if (!empty($return))
+			Yii::log($return, CLogger::LEVEL_ERROR, 'ClientScript');
 	}
 
 	private function closurify($content, $outFile, $type) {
-    $temp = $this->_basePath . DS . 'protected' . DS . 'runtime' . DS . $outFile;
-    file_put_contents($temp, $content);
+		$temp = $this->_basePath . DS . 'protected' . DS . 'runtime' . DS . $outFile;
+		file_put_contents($temp, $content);
 		unset($content);
-    switch ($type) {
-        case self::TYPE_CSS:
-            $cmd = sprintf('%s -jar %s -o %s %s',
-                $this->javaPath,
-                $this->yuicPath,
-                $this->_assetsPath . DS . $outFile,
-                $temp);
-            break;
-        case self::TYPE_JS:
-            $cmd = sprintf('%s -jar %s --js_output_file %s --compilation_level %s --js %s --formatting=PRETTY_PRINT',
-                $this->javaPath,
-                $this->closurePath,
-                $this->_assetsPath . DS . $outFile,
-                $this->closureConfig,
-                $temp);
-            break;
-    }
-    $return = shell_exec($cmd);
-	}
-
-	private function crockfordify($content, $outFile, $type) {
-		require_once 'jsmin.php';
-		require_once 'cssmin-v3.0.1.php';
-
 		switch ($type) {
 			case self::TYPE_CSS:
-				$out = CSSMin::minify($content);
+				$cmd = sprintf('%s -jar %s -o %s %s',
+					$this->javaPath,
+					$this->yuicPath,
+					$this->_assetsPath . DS . $outFile,
+					$temp);
 				break;
 			case self::TYPE_JS:
-				$out = JSMin::minify($content);
+				$cmd = sprintf('%s -jar %s --js_output_file %s --compilation_level %s --js %s --formatting=PRETTY_PRINT',
+					$this->javaPath,
+					$this->closurePath,
+					$this->_assetsPath . DS . $outFile,
+					$this->closureConfig,
+					$temp);
 				break;
 		}
-		file_put_contents($this->_assetsPath . DS . $outFile, $out);
+		$return = shell_exec($cmd);
 	}
 }
