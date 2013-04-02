@@ -131,6 +131,11 @@ class mtClientScript extends CClientScript {
 		return parent::registerCssFile($name);
 	}
 
+	public function registerScriptFileWithTimestamp($name) {
+		$name .= '?t=' . $this->filemtimeCheck($name);
+		return parent::registerScriptFile($name);
+	}
+
 	private function combineScripts() {
 		// each package gets its own minified version
 		foreach ($this->packages as $name => $package) {
