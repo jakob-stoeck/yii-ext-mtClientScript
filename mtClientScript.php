@@ -144,7 +144,7 @@ class mtClientScript extends CClientScript {
 			$files = $package[self::TYPE_JS];
 			$mtimes = $this->filesmtimes($files);
 			if (empty($mtimes)) { continue; }
-			$outFile = $name . '_' . md5(implode('', $mtimes));
+			$outFile = ereg_replace('[^a-zA-Z0-9]', '', $name) . '_' . md5(implode('', $mtimes));
 			$urls = array();
 			foreach ($files as $f) {
 				$base = basename($f);
